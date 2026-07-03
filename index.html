@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#FAFAF8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D0D0F" media="(prefers-color-scheme: dark)">
 <title>Chain Reaction</title>
 <style>
   :root{
@@ -14,10 +19,14 @@
   }
   body[data-theme="light"]{ --bg:#FAFAF8; --surface:#FFFFFF; --surface-2:#F1F1EE; --tile:#ECEBE7; --text:#161618; --dim:#9C9CA2; --border:rgba(0,0,0,.055); --shadow:0 20px 60px rgba(0,0,0,.14); }
   body[data-theme="dark"]{ --bg:#0D0D0F; --surface:#161619; --surface-2:#1E1E22; --tile:#212127; --text:#F5F5F6; --dim:#7E7E86; --border:rgba(255,255,255,.07); --shadow:0 20px 60px rgba(0,0,0,.6); }
-  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;}
-  body{background:var(--bg); color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center;
-    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif; -webkit-font-smoothing:antialiased; padding:20px; transition:background .3s var(--ease),color .3s var(--ease);}
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
+  html{height:100%; overscroll-behavior:none;}
+  body{background:var(--bg); color:var(--text); min-height:100vh; min-height:100dvh; display:flex; align-items:center; justify-content:center;
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif; -webkit-font-smoothing:antialiased;
+    overscroll-behavior:none; overflow-x:hidden;
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+    padding:max(20px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+    transition:background .3s var(--ease),color .3s var(--ease);}
   .screen{display:none; width:100%; max-width:432px; flex-direction:column;}
   .screen.active{display:flex; animation:fade .4s var(--ease);}
   @keyframes fade{from{opacity:0; transform:translateY(8px);}to{opacity:1; transform:none;}}
@@ -444,6 +453,10 @@
   $('rematch').addEventListener('click', newGame);
 
   applyTheme(); syncUI();
+
+  // Mobile hardening: block iOS pinch-zoom gestures and long-press context menu.
+  ['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev, e=>e.preventDefault(), {passive:false}));
+  document.addEventListener('contextmenu', e=>e.preventDefault());
 })();
 </script>
 </body>
