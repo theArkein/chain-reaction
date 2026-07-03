@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chain Reaction — Lab (generalized)</title>
+<style>
+  :root{
+    --bg:#F4F4F2; --surface:#FFFFFF; --surface-2:#FBFBFA; --tile:#E7E6E2;
+    --text:#1B1B1D; --dim:#6B6B72; --border:rgba(0,0,0,.09); --shadow:0 10px 40px rgba(0,0,0,.10);
+    --radius:14px; --ease:cubic-bezier(.4,0,.2,1);
+    --c1:#4C86F0; --c2:#F35B54; --c3:#46B36B; --c4:#E0A32E;
+    --c1s:rgba(76,134,240,.15); --c2s:rgba(243,91,84,.15); --c3s:rgba(70,179,107,.15); --c4s:rgba(224,163,46,.15);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;padding:16px;}
+  .screen{display:none;width:100%;max-width:540px;flex-direction:column;}
+  .screen.active{display:flex;animation:fade .3s var(--ease);}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  h1{font-size:32px;font-weight:800;letter-spacing:-.5px;text-align:center;}
+  .lab{font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center;margin-bottom:20px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:20px;margin-top:16px;}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-top:1px solid var(--border);}
+  .row:first-child{border-top:none;}
+  .row .lbl{font-weight:600;font-size:15px;}
+  .seg{display:flex;background:var(--tile);border-radius:10px;padding:3px;gap:2px;}
+  .seg button{border:none;background:transparent;color:var(--dim);font:inherit;font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;}
+  .seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+  .seg button:disabled{opacity:.35;cursor:not-allowed;}
+  .stepper{display:flex;align-items:center;gap:10px;}
+  .stepbtn{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font:inherit;font-size:20px;font-weight:700;color:var(--text);cursor:pointer;line-height:1;}
+  .stepbtn:active{transform:scale(.94);}
+  .stepbtn:disabled{opacity:.35;cursor:not-allowed;}
+  .stepval{font-weight:800;font-size:16px;min-width:56px;text-align:center;}
+  .btn{border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-weight:800;font-size:15px;padding:14px 24px;border-radius:14px;cursor:pointer;transition:transform .1s;}
+  .btn:active{transform:scale(.97);}
+  .btn.primary{background:var(--text);color:var(--bg);border-color:transparent;width:100%;margin-top:18px;}
+  /* game */
+  #game{gap:14px;position:relative;}
+  .hud{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+  .pchip{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;padding:6px 11px;border-radius:10px;background:var(--surface);border:1px solid var(--border);}
+  .pchip .d{width:11px;height:11px;border-radius:50%;}
+  .pchip.turn{border-color:var(--text);box-shadow:0 0 0 1px var(--text);}
+  .pchip.out{opacity:.4;text-decoration:line-through;}
+  .turnbar{text-align:center;font-weight:800;font-size:16px;min-height:22px;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .turnbar .d{width:13px;height:13px;border-radius:50%;}
+  .board{display:grid;gap:9px;aspect-ratio:1/1;position:relative;}
+  .cell{border-radius:12px;background:var(--tile);position:relative;display:flex;align-items:center;justify-content:center;transition:background .18s var(--ease),transform .08s;}
+  .cell.clickable{cursor:pointer;} .cell.clickable:hover{transform:scale(1.04);}
+  .orb{width:72%;height:72%;border-radius:50%;position:relative;transition:background .15s var(--ease);}
+  .orb.appear{animation:pop .16s var(--ease);}
+  .orb.boom{animation:boom .2s var(--ease) forwards;}
+  @keyframes pop{from{transform:scale(.55);}to{transform:scale(1);}}
+  @keyframes boom{0%{transform:scale(1);}55%{transform:scale(1.28);}100%{transform:scale(.12);opacity:0;}}
+  .pip{position:absolute;width:19%;height:19%;border-radius:50%;background:#fff;}
+  .particle{position:absolute;border-radius:50%;z-index:2;transition:transform .17s var(--ease);}
+  .over{position:absolute;inset:0;background:rgba(244,244,242,.8);backdrop-filter:blur(6px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;border-radius:16px;z-index:10;padding:24px;}
+  .over.show{display:flex;animation:fade .3s var(--ease);}
+  .over h2{font-size:28px;font-weight:800;text-align:center;}
+  .over .rowb{display:flex;gap:12px;}
+  .foot{font-size:12px;color:var(--dim);margin-top:2px;}
+</style>
+</head>
+<body>
+  <!-- SETUP -->
+  <div id="setup" class="screen active">
+    <h1>Chain Reaction</h1>
+    <div class="lab">Lab · generalized prototype</div>
+    <div class="card">
+      <div class="row"><span class="lbl">Board size</span>
+        <div class="stepper">
+          <button class="stepbtn" id="sizeDown" aria-label="Smaller board">−</button>
+          <span class="stepval" id="sizeVal">6×6</span>
+          <button class="stepbtn" id="sizeUp" aria-label="Larger board">+</button>
+        </div></div>
+      <div class="row"><span class="lbl">Players</span>
+        <div class="seg" data-set="players"><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button></div></div>
+      <div class="row"><span class="lbl">Format</span>
+        <div class="seg" data-set="format"><button data-v="ffa">Free-for-all</button><button data-v="teams">Teams (2v2)</button></div></div>
+      <button class="btn primary" id="start">Start game</button>
+      <p class="foot" id="fmtnote">Teams available with 4 players.</p>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div id="game" class="screen">
+    <div class="turnbar" id="turnbar"></div>
+    <div class="hud" id="hud"></div>
+    <div class="board" id="board"></div>
+    <div class="over" id="over">
+      <h2 id="winText"></h2>
+      <div class="foot" id="winFoot"></div>
+      <div class="rowb">
+        <button class="btn" id="toSetup">New setup</button>
+        <button class="btn primary" id="rematch" style="width:auto;margin:0;">Rematch</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const THRESH=4, NONE=0;
+  const COL={1:'--c1',2:'--c2',3:'--c3',4:'--c4'};
+  const SOFT={1:'--c1s',2:'--c2s',3:'--c3s',4:'--c4s'};
+  const $=id=>document.getElementById(id);
+  const board=$('board');
+
+  const SIZE_MIN=4, SIZE_MAX=12;
+  const cfg={size:6, players:2, format:'ffa'};
+  let R,C,P, owner, count, teamOf, teamName, phase, seatOrder, ptr, current, busy, cells, moves;
+
+  // ---- setup screen controls ----
+  function updateSizeUI(){
+    $('sizeVal').textContent=cfg.size+'×'+cfg.size;
+    $('sizeDown').disabled = cfg.size<=SIZE_MIN;
+    $('sizeUp').disabled = cfg.size>=SIZE_MAX;
+  }
+  function syncSetupUI(){
+    document.querySelectorAll('.seg').forEach(seg=>{
+      const key=seg.dataset.set;
+      seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on', String(cfg[key])===b.dataset.v));
+    });
+    // teams only with 4 players
+    const teamsBtn=document.querySelector('.seg[data-set="format"] button[data-v="teams"]');
+    const allowTeams = cfg.players===4;
+    teamsBtn.disabled=!allowTeams;
+    if(!allowTeams && cfg.format==='teams'){ cfg.format='ffa'; }
+    document.querySelectorAll('.seg[data-set="format"] button').forEach(b=>b.classList.toggle('on', b.dataset.v===cfg.format));
+    $('fmtnote').textContent = allowTeams ? 'Teams = 2 vs 2. Free-for-all = every player for themselves.' : 'Teams available with 4 players.';
+    updateSizeUI();
+  }
+  $('sizeDown').addEventListener('click',()=>{ if(cfg.size>SIZE_MIN){cfg.size--; updateSizeUI();} });
+  $('sizeUp').addEventListener('click',()=>{ if(cfg.size<SIZE_MAX){cfg.size++; updateSizeUI();} });
+  document.querySelectorAll('.seg').forEach(seg=>seg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    if(b.disabled) return;
+    const key=seg.dataset.set; cfg[key] = (key==='format')?b.dataset.v:parseInt(b.dataset.v,10); syncSetupUI();
+  })));
+
+  // ---- geometry ----
+  function neighbors(i){const r=(i/C)|0,c=i%C,o=[];if(r>0)o.push(i-C);if(r<C-1)o.push(i+C);if(c>0)o.push(i-1);if(c<C-1)o.push(i+1);return o;}
+  function shuffle(a){for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+  const cvar=p=>`var(${COL[p]})`;
+
+  function teamsPresent(){ const s=new Set(); for(let i=0;i<R*C;i++) if(count[i]>0) s.add(teamOf[owner[i]]); return s; }
+  function cellsOf(p){ let n=0; for(let i=0;i<R*C;i++) if(count[i]>0&&owner[i]===p) n++; return n; }
+
+  // ---- new game ----
+  function newGame(){
+    R=C=cfg.size; P=cfg.players;
+    owner=new Array(R*C).fill(NONE); count=new Array(R*C).fill(0);
+    teamOf={}; teamName={};
+    if(cfg.format==='teams'){ teamOf={1:'A',2:'B',3:'A',4:'B'}; teamName={A:'Team A',B:'Team B'}; }
+    else { for(let k=1;k<=P;k++){ teamOf[k]=k; teamName[k]='Player '+k; } }
+    seatOrder=shuffle([...Array(P)].map((_,k)=>k+1));   // randomized start order (fairness)
+    phase='SETUP'; ptr=0; current=seatOrder[0]; busy=false; moves=0;
+    buildBoard();
+    $('over').classList.remove('show');
+    setScreen('game'); render(); setTurn();
+  }
+
+  function buildBoard(){
+    const gap = C<=6?9 : C<=8?7 : C<=10?5 : 4;          // shrink spacing as board grows
+    const rad = C<=6?12 : C<=8?9 : C<=10?7 : 5;          // shrink corner radius to match
+    board.style.gridTemplateColumns='repeat('+C+',1fr)';
+    board.style.gap=gap+'px';
+    board.innerHTML=''; cells=[];
+    for(let i=0;i<R*C;i++){ const d=document.createElement('div'); d.className='cell'; d.style.borderRadius=rad+'px'; d.addEventListener('click',()=>onClick(i)); board.appendChild(d); cells.push(d); }
+  }
+
+  const PIPS={1:[[40.5,40.5]],2:[[22,22],[59,59]],3:[[40.5,17],[18,60],[63,60]]};
+  function pipsFor(orb,v){orb.innerHTML='';(PIPS[Math.min(v,3)]||PIPS[3]).forEach(p=>{const x=document.createElement('div');x.className='pip';x.style.left=p[0]+'%';x.style.top=p[1]+'%';orb.appendChild(x);});}
+
+  function render(){
+    for(let i=0;i<R*C;i++){
+      const d=cells[i], o=owner[i], v=count[i];
+      d.style.background = (phase==='PLAY'&&v>0&&o===current) ? `var(${SOFT[o]})` : 'var(--tile)';
+      let clickable=false;
+      if(!busy){ if(phase==='SETUP') clickable=(v===0); else if(phase==='PLAY') clickable=(o===current&&v>0); }
+      d.classList.toggle('clickable', clickable);
+      let orb=d.querySelector('.orb');
+      if(v>0){
+        if(!orb){ orb=document.createElement('div'); orb.className='orb appear'; orb.dataset.o='';orb.dataset.n=''; d.appendChild(orb); orb.addEventListener('animationend',()=>orb.classList.remove('appear'),{once:true}); }
+        if(orb.dataset.o!==String(o)){ orb.dataset.o=String(o); orb.style.background=cvar(o); }
+        if(orb.dataset.n!==String(v)){ orb.dataset.n=String(v); pipsFor(orb,v); }
+      } else if(orb){ d.removeChild(orb); }
+    }
+    renderHUD();
+  }
+  function renderHUD(){
+    const hud=$('hud'); hud.innerHTML='';
+    for(let k=1;k<=P;k++){
+      const n=cellsOf(k); const out = phase==='PLAY' && n===0;
+      const chip=document.createElement('div'); chip.className='pchip'+(k===current?' turn':'')+(out?' out':'');
+      const tag = cfg.format==='teams' ? (' ('+teamOf[k]+')') : '';
+      chip.innerHTML='<span class="d" style="background:'+cvar(k)+'"></span>P'+k+tag+' · '+n;
+      hud.appendChild(chip);
+    }
+  }
+  function setTurn(){
+    const tb=$('turnbar');
+    if(phase==='SETUP') tb.innerHTML='<span class="d" style="background:'+cvar(current)+'"></span>Player '+current+' · place your start';
+    else tb.innerHTML='<span class="d" style="background:'+cvar(current)+'"></span>Player '+current+' · your turn';
+  }
+
+  function onClick(i){
+    if(busy) return;
+    if(phase==='SETUP'){ if(count[i]!==0) return; owner[i]=current; count[i]=3; ptr++; if(ptr>=P){ startPlay(); } else { current=seatOrder[ptr]; render(); setTurn(); } return; }
+    if(phase==='PLAY'){ if(owner[i]!==current||count[i]===0) return; doMove(i); }
+  }
+  function startPlay(){ phase='PLAY'; ptr=0; current=seatOrder[0]; render(); setTurn(); }
+
+  function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+  function cellCenter(i){const d=cells[i];return [d.offsetLeft+d.offsetWidth/2, d.offsetTop+d.offsetHeight/2];}
+  function flyWave(ex, actor){
+    const size=cells[0].offsetWidth*0.30, parts=[];
+    ex.forEach(src=>{const [sx,sy]=cellCenter(src);
+      neighbors(src).forEach(dst=>{const [dx,dy]=cellCenter(dst);
+        const p=document.createElement('div');p.className='particle';p.style.background=cvar(actor);
+        p.style.width=size+'px';p.style.height=size+'px';p.style.left=(sx-size/2)+'px';p.style.top=(sy-size/2)+'px';
+        board.appendChild(p);requestAnimationFrame(()=>{p.style.transform='translate('+(dx-sx)+'px,'+(dy-sy)+'px)';});parts.push(p);});});
+    return parts;
+  }
+  async function resolve(actor){
+    let guard=0;
+    while(guard++<5000){
+      const ex=[]; for(let i=0;i<R*C;i++) if(count[i]>=THRESH) ex.push(i);
+      if(!ex.length) break;
+      ex.forEach(i=>{const orb=cells[i].querySelector('.orb'); if(orb) orb.classList.add('boom');});
+      await delay(140);
+      ex.forEach(i=>{owner[i]=NONE;count[i]=0;});
+      render();
+      const parts=flyWave(ex, actor);
+      await delay(175);
+      const dep={}; ex.forEach(i=>neighbors(i).forEach(n=>dep[n]=(dep[n]||0)+1));
+      for(const k in dep){const i=+k;owner[i]=actor;count[i]+=dep[k];if(count[i]>THRESH)count[i]=THRESH;}
+      parts.forEach(p=>p.remove());
+      render();
+      if(teamsPresent().size<=1) break;
+      await delay(60);
+    }
+  }
+  async function doMove(i){
+    busy=true; count[i]+=1; render(); await delay(120);
+    await resolve(current); moves++;
+    if(teamsPresent().size===1){ busy=false; render(); return gameOver(); }
+    // advance to next non-eliminated seat
+    do{ ptr=(ptr+1)%P; current=seatOrder[ptr]; }while(cellsOf(current)===0);
+    busy=false; render(); setTurn();
+  }
+  function gameOver(){
+    const t=[...teamsPresent()][0];
+    $('winText').textContent = teamName[t]+' wins';
+    $('winText').style.color = cfg.format==='teams' ? (t==='A'?'var(--c1)':'var(--c2)') : cvar(t);
+    $('winFoot').textContent = moves+' turns · '+cfg.size+'×'+cfg.size+' · '+(cfg.format==='teams'?'2v2':P+'-player FFA');
+    $('over').classList.add('show');
+  }
+
+  function setScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));}
+  $('start').addEventListener('click', newGame);
+  $('rematch').addEventListener('click', newGame);
+  $('toSetup').addEventListener('click', ()=>{ $('over').classList.remove('show'); setScreen('setup'); });
+
+  syncSetupUI();
+})();
+</script>
+</body>
+</html>
