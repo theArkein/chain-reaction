@@ -1,6 +1,6 @@
 # Chain Reaction — Design System (v1.0)
 
-**Status:** Current. Describes the shipped sleek-minimal app (`chain-reaction.html`).
+**Status:** Current. Describes the shipped sleek-minimal app (`index.html`).
 **Last updated:** 2026-07-03
 **Companion spec:** `Chain-Reaction-Gameplay-PRD-v1.1.md` (game logic — the source of truth for all state this UI renders).
 
