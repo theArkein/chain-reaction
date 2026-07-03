@@ -1,6 +1,17 @@
-# Chain Reaction — Gameplay PRD (v1.1)
+# Chain Reaction — Gameplay PRD (v1.2)
 
 **Scope:** This document specifies game logic and rules only. It intentionally excludes UI, visual design, animation, and rendering — those are separate concerns to be designed independently against this spec.
+
+Sections 1–8 describe the **canonical 2-player, 5×5 game** (the reference the validation scripts prove). Section 11 defines the **generalization** the shipped app implements (any square board, 2–4 players, teams) — the core resolution rules (§4, §6) are unchanged under it.
+
+---
+
+## Revision note (v1.2)
+
+This revision documents the shipped generalization and corrects scope:
+
+1. **§9 — Scope corrected.** "More than 2 players" and "configurable board sizes" are no longer out of scope; they are specified in §11.
+2. **§11 — Generalization (new).** Board size R×C, 2–4 players, free-for-all and 2v2 teams, generalized win/elimination, and turn order. Backed by simulation (0 non-terminations across board sizes and player counts).
 
 ---
 
@@ -174,8 +185,9 @@ GAME_OVER: terminal state, no further moves
 - Sound
 - AI/CPU opponent behavior
 - Undo/redo, move history, replay
-- More than 2 players or configurable board sizes
 - Any networking/multiplayer-over-network concerns
+
+*(Note: "more than 2 players" and "configurable board sizes" were listed here in v1.1 but are now specified — see §11.)*
 
 ---
 
@@ -184,3 +196,38 @@ GAME_OVER: terminal state, no further moves
 - **First-player advantage (accepted for v1).** Moving first into a board of pre-primed (count-3) seeds gives `PLAYER_1` a measured ~55% win rate under random play (vs ~45% for `PLAYER_2`). This is accepted as intended for v1. Future balancing options, if desired: seed at a lower count (e.g., 1 or 2) to soften the opening, enforce a minimum seeding distance, or grant `PLAYER_2` compensation (e.g., second seed or first move).
 - **Turn-1 adjacency trap (documented, see §5.1).** Seeding adjacent to `PLAYER_1` is a guaranteed turn-1 loss for `PLAYER_2`. A future version could forbid adjacent seeding to remove the trap; v1 leaves it legal and relies on player awareness / UI warnings.
 - **Game length bound (optional).** The game always terminates in a win, but pathological stalling can produce very long games (2,000+ moves observed). If bounded duration is required (e.g., timed or tournament play), add a move cap with a tiebreak (e.g., the player controlling the most cells wins; ties resolved by total orb count). Not required for correctness.
+
+---
+
+## 11. Generalization: board size, players, and teams
+
+The shipped app generalizes the canonical game along three axes. **The resolution rules (§4 capacity, §6 explosion/cascade with clamp-at-4, §6.3 simultaneity) are unchanged** — only the board dimensions, the set of players, and the win grouping generalize.
+
+### 11.1 Board
+
+- The board is a square **N×N grid**; N is configurable. The shipped app allows **N = 4…12** (upper bound is a UI/mobile-legibility limit, not a logic limit). Adjacency remains orthogonal-only; capacity is still uniform (explode at 4). Corner/edge/interior neighbor counts (2/3/4) scale naturally with N.
+
+### 11.2 Players and teams
+
+- **P players**, `P ∈ {2, 3, 4}`. Each player owns cells and takes turns in a fixed seat order.
+- **Teams (optional).** With `P = 4`, players may be grouped into two teams of two (2v2). Each cell belongs to exactly one player; a player belongs to exactly one *team*. Free-for-all (FFA) is the default; each player is their own team.
+- **Capture is to the acting *player*** (unchanged, §6.1.3) — never to a team abstraction. An explosion may deposit into a teammate's cell, which converts it to the acting player; this is harmless because the win check (§11.4) groups by team.
+
+### 11.3 Setup and turn order
+
+- Setup is order-agnostic (§5.1 generalizes): each of the P players seeds one distinct empty cell at count 3, in **seat order**.
+- **Seat order is randomized each game** to offset the turn-order advantage (which grows with player count — measured first-seat win rate ~55% at 2p rising to ~31% vs a fair 25% at 4p under random play). *Exception:* the app keeps deterministic `PLAYER_1`-first for **2-player hotseat** to preserve the classic 1v1 opening.
+- On each turn the current seat acts; **eliminated players (zero owned cells) are skipped.**
+
+### 11.4 Win and elimination
+
+- A player is **eliminated** when they have zero owned cells after any resolved turn (permanent — a player with no cells can never regain any, since only the acting player gains cells).
+- **Win check (generalizes §7):** at the end of a fully-resolved turn, gather all occupied cells; if every one belongs to a single **team**, that team (or player, in FFA) wins. Otherwise play passes to the next non-eliminated seat.
+
+### 11.5 Validation
+
+Simulation over board sizes 5×5–7×7 and 2/3/4 players plus 2v2 teams found **zero non-terminating games** — the termination guarantee (§6.2) holds on any rectangular board and player count (edges still leak orbs). 2v2 teams are balanced ~50/50 under random play. Free-for-all with 3–4 players carries a "gang-up on the leader" dynamic that is left to players (not a logic concern).
+
+### 11.6 What is unchanged
+
+Capacity (§4), explosion/cascade/clamp (§6), the simultaneity rule (§6.3), the non-empty-set and no-self-elimination invariants (§7), and "always terminates, no draws" (§7) all hold as stated for any N and P.

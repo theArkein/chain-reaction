@@ -1,6 +1,6 @@
 # Chain Reaction — validation scripts
 
-Reference implementation and simulations backing the fixes in `Chain-Reaction-Gameplay-PRD-v1.1.md`.
+Reference implementation and simulations backing the fixes in `Chain-Reaction-Gameplay-PRD-v1.2.md`.
 Pure Python 3, no dependencies. Run any script with `python3 <name>.py` from this folder.
 
 | Script | What it validates | Key result |

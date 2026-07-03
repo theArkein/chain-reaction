@@ -1,6 +1,6 @@
 # Chain Reaction
 
-A two-player **Chain Reaction** strategy game on a 5×5 grid. Grow orbs in cells you control; when a cell overflows it explodes and captures its neighbors, potentially setting off a chain. You win when you control every occupied cell on the board.
+A **Chain Reaction** strategy game for 2–4 players on a configurable square board. Grow orbs in cells you control; when a cell overflows it explodes and captures its neighbors, potentially setting off a chain. You win when your side controls every occupied cell on the board.
 
 The entire game is one self-contained file — `index.html` — with no build step, no dependencies, and no server. Just open it in a browser.
 
@@ -10,25 +10,30 @@ The entire game is one self-contained file — `index.html` — with no build st
 
 Open `index.html` in any modern browser (double-click it, or drag it into a browser window).
 
-From the menu you can play **with a friend** (two players, one device) or **against the bot**. Each player first places a starting cell, then players alternate: tap one of your own cells to add an orb. A cell explodes at 4 orbs, sending one orb to each orthogonal neighbor and converting them to your color — which can trigger further explosions. Last player standing on the board wins.
+The home screen is the match configurator: pick a mode and the relevant options appear, then press **Play**. Each player first places a starting cell, then players take turns: tap one of your own cells to add an orb. A cell explodes at 4 orbs, sending one orb to each orthogonal neighbor and converting them to your color — which can trigger further explosions. The last side with cells on the board wins.
 
 ## Features
 
-- **Two modes:** local hotseat (vs a friend) and single-player vs a bot.
-- **Five bot difficulties:** Easy, Medium, Hard, Expert, and Insane. Expert and Insane use deep search and play near-optimally — Insane is meant to be effectively unbeatable.
-- **Randomized opener in bot mode** to keep games fair (the first player is chosen at random each game); friend mode always starts with Player 1.
-- **Sleek-minimal UI** with light and dark themes.
-- **Settings:** sound, haptics, animation speed (Full / Reduced / Off), theme, and bot difficulty — all applied live. Changing difficulty mid-game shows a confirmation toast.
+- **Two modes:**
+  - **Friends** — pass-and-play for **2–4 players** on one device, as **free-for-all** or **2v2 teams** (teams unlock at 4 players).
+  - **Bot** — single-player vs the AI (2-player), on any board size.
+- **Configurable board** — any square size from **4×4 to 12×12** (the board auto-scales; the cap keeps cells tappable on phones).
+- **Five bot difficulties:** Easy, Medium, Hard, Expert, and Insane. Expert and Insane use deep search (iterative deepening) and play near-optimally — Insane is meant to be effectively unbeatable.
+- **Fair openings** — seat order is randomized each game (classic Player-1-first is kept only for 2-player hotseat).
+- **Adaptive, low-chrome UI** with light and dark themes; the board is the hero.
+- **Preferences** (gear, available in-game): sound, haptics, animation speed (Full / Reduced / Off), and theme. Bot difficulty is also adjustable live during a bot game (with a toast). Match setup (board/players/format) is chosen on the home screen and locked once a game starts.
 - **Synthesized sound and haptics** (Web Audio + vibration), no audio files.
 - **Polished end screen** with a one-word verdict (Domination / Nail-biter / Comeback / Clean sweep / Hard-fought) and match stats.
+- **Mobile-hardened** — no pinch/double-tap zoom, no scroll rubber-banding, no text selection or long-press menus, and safe-area padding for notches.
 
 ## Repository layout
 
 | Path | What it is |
 |---|---|
 | `index.html` | The complete game (HTML + CSS + JS, single file). |
-| `Chain-Reaction-Gameplay-PRD-v1.1.md` | Authoritative spec for the **game logic and rules** — cascade resolution, win condition, proven invariants, and design decisions. |
-| `Chain-Reaction-Design-System-v1.0.md` | Authoritative spec for **appearance and interaction** — design tokens, components, motion, and state→visual mapping. |
+| `chain-reaction-lab.html` | Standalone hotseat prototype for the generalized game (board size, 2–4 players, FFA/teams) — a sandbox that predates the merge into `index.html`. |
+| `Chain-Reaction-Gameplay-PRD-v1.2.md` | Authoritative spec for the **game logic and rules** — cascade resolution, win condition, proven invariants, and the generalization (players/teams/board size). |
+| `Chain-Reaction-Design-System-v2.0.md` | Authoritative spec for **appearance and interaction** — design tokens, components, motion, and state→visual mapping. |
 | `validation/` | Standalone Python 3 scripts (and a reference engine) that verify the game logic and bot behavior. See `validation/README.md`. |
 | `CLAUDE.md` | Guidance for AI assistants working in this repo. |
 
@@ -48,9 +53,9 @@ The game's cascade logic is a direct port of the validated Python reference in `
 
 ## Rules summary
 
-- 5×5 grid, orthogonal adjacency only.
+- Square board (default 5×5, configurable 4×4–12×12), orthogonal adjacency only.
 - Every cell holds up to 3 orbs; the 4th triggers an explosion.
 - An explosion resets the cell to empty and adds one orb to each orthogonal neighbor, capturing them for the acting player. Chains resolve fully before the turn ends.
-- A player wins when every occupied cell on the board is theirs.
+- A side (player, or team in 2v2) wins when every occupied cell on the board belongs to it. Players with no cells are eliminated; the game always ends in a win (never a draw).
 
-Full details, including the simultaneous-wave resolution and the clamp-at-4 deposit rule, are in the gameplay PRD.
+Full details — the simultaneous-wave resolution, the clamp-at-4 deposit rule, and the multiplayer/teams/board-size generalization — are in the gameplay PRD.
